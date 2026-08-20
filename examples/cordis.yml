@@ -1,0 +1,14 @@
+# BitRouter on DeepSeek Harness — plugin form.
+#
+# The llm adapter serves the route; this plugin keeps its model list live.
+# Both entries are needed: @bitrouter/dsh writes into the `llm-pi-ai` settings
+# namespace, which only exists because the adapter below registered it.
+
+- id: llm
+  name: '@deepseek-ai/dsh-llm-pi-ai'
+
+- name: '@bitrouter/dsh'
+  config:
+    # auto: use the local daemon when it serves models, else BitRouter Cloud.
+    target: auto
+    apiKeyEnv: BITROUTER_API_KEY

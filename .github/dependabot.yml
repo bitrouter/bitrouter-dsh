@@ -1,0 +1,13 @@
+# The harness contract this plugin is written against is @deepseek-ai/cordis
+# plus the dsh service seams, so a bump is the signal to re-check
+# compatibility. CI builds and tests the bump PR.
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule: { interval: "weekly" }
+    labels: ["harness-update"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule: { interval: "monthly" }

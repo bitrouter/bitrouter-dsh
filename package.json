@@ -1,0 +1,62 @@
+{
+  "name": "@bitrouter/dsh",
+  "version": "0.1.0",
+  "description": "BitRouter route for DeepSeek Harness — live model discovery for an OpenAI-compatible BitRouter gateway",
+  "type": "module",
+  "license": "Apache-2.0",
+  "author": "BitRouterAI",
+  "homepage": "https://github.com/bitrouter/bitrouter-dsh#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bitrouter/bitrouter-dsh.git"
+  },
+  "bugs": {
+    "url": "https://github.com/bitrouter/bitrouter-dsh/issues"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "cordis",
+    "bitrouter",
+    "llm",
+    "ai-gateway"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "examples",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "prepublishOnly": "npm run build"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-settings": "^0.0.1-rc.1",
+    "@deepseek-ai/schemastery": "^3.18.1"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-settings": "^0.0.1-rc.1",
+    "@deepseek-ai/schemastery": "^3.18.1",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.0"
+  }
+}
