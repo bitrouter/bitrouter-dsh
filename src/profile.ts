@@ -1,44 +1,22 @@
+import type {
+  PiAiCompatProfile,
+  PiAiModelProfile,
+  PiAiProviderProfile,
+} from "@deepseek-ai/dsh-llm-pi-ai";
 import { bitrouter, PROTOCOL } from "./constants.js";
 import type { DiscoveredModel } from "./discovery.js";
 
-/**
- * The subset of `@deepseek-ai/dsh-llm-pi-ai`'s `PiAiProviderProfile` this
- * plugin writes. Mirrored rather than imported: `@deepseek-ai/dsh-llm-pi-ai`
- * declares a peer dependency on `@deepseek-ai/dsh-environment`, which is not
- * published to npm as of `0.0.1-rc.1`, so the package cannot be installed
- * standalone. The shape below is validated by llm-pi-ai's own schema when the
- * section is written, so a drift shows up as a `settings-rejected` naming the
- * offending field rather than as silent breakage.
- */
-export interface PiAiModelProfile {
-  id: string;
-  name?: string;
-  contextWindow?: number;
-  maxTokens?: number;
-  input?: ("text" | "image")[];
-}
-
-export interface PiAiCompatProfile {
-  supportsStore?: boolean;
-  supportsUsageInStreaming?: boolean;
-  supportsDeveloperRole?: boolean;
-  maxTokensField?: "max_tokens" | "max_completion_tokens";
-}
-
-export interface PiAiProviderProfile {
-  displayName?: string;
-  apiKeyEnv?: string;
-  api?: string;
-  baseURL?: string;
-  compat?: PiAiCompatProfile;
-  models?: PiAiModelProfile[];
-}
+export type {
+  PiAiCompatProfile,
+  PiAiModelProfile,
+  PiAiProviderProfile,
+} from "@deepseek-ai/dsh-llm-pi-ai";
 
 /**
- * BitRouter is not an OpenAI backend, and pi-ai shapes a request it cannot
- * recognize as though it were OpenAI itself. Each switch below corrects one
- * field BitRouter's gateway rejects outright with a strict "Extra inputs are
- * not permitted", or would mis-address:
+ * BitRouter is an OpenAI-compatible gateway, not an OpenAI backend, and pi-ai
+ * shapes a request whose URL it cannot recognize as though it were OpenAI
+ * itself. Each switch corrects one field BitRouter's gateway rejects outright
+ * with a strict "Extra inputs are not permitted", or would mis-address:
  *
  * - `supportsStore` / `supportsUsageInStreaming` — suppress `store: false` and
  *   `stream_options`, the two OpenAI-only request fields the gateway refuses.

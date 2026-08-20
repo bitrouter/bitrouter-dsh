@@ -1,0 +1,30 @@
+# BitRouter on DeepSeek Harness — no plugin.
+#
+# The same route this plugin would write, entered by hand in
+# `$DSH_HOME/settings.yaml`. You lose live model discovery and maintain the
+# `models:` list yourself; everything else is identical, including the
+# wire-compat switches. `dsh-base` already mounts the llm-pi-ai adapter, so
+# this section alone is enough to make the route live.
+#
+# Swap baseURL to http://127.0.0.1:4356/v1 for a local BitRouter daemon.
+
+llm-pi-ai:
+  providers:
+    bitrouter:
+      displayName: BitRouter
+      apiKeyEnv: BITROUTER_API_KEY
+      api: openai-completions
+      baseURL: https://api.bitrouter.ai/v1
+      # BitRouter is not an OpenAI backend: pi-ai would otherwise address an
+      # unrecognized URL as though it were, and the gateway rejects the
+      # OpenAI-only request fields with "Extra inputs are not permitted".
+      compat:
+        supportsStore: false
+        supportsUsageInStreaming: false
+        supportsDeveloperRole: false
+        maxTokensField: max_tokens
+      models:
+        - id: kimi-k2.5
+          name: Kimi K2.5
+          contextWindow: 262144
+          maxTokens: 32768

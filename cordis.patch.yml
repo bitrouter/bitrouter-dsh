@@ -1,0 +1,9 @@
+# Bundle layer for @bitrouter/dsh, applied when a profile lists this bundle.
+#
+# Only this plugin is inserted. Everything it depends on is already in
+# `@deepseek-ai/dsh-base`: the `llm-pi-ai` adapter (mounted dormant, waiting for
+# a settings section to supply routes), the `settings` document provider, and
+# `credentials` for resolving apiKeyEnv references.
+- insert:
+    - id: bitrouter
+      name: '@bitrouter/dsh'

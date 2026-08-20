@@ -1,7 +1,7 @@
 {
   "name": "@bitrouter/dsh",
   "version": "0.1.0",
-  "description": "BitRouter route for DeepSeek Harness — live model discovery for an OpenAI-compatible BitRouter gateway",
+  "description": "BitRouter route for DeepSeek Harness \u2014 live model discovery for an OpenAI-compatible BitRouter gateway",
   "type": "module",
   "license": "Apache-2.0",
   "author": "BitRouterAI",
@@ -16,6 +16,7 @@
   "keywords": [
     "dsh",
     "dsh-plugin",
+    "dsh-bundle",
     "deepseek-harness",
     "cordis",
     "bitrouter",
@@ -29,11 +30,13 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./cordis.patch.yml": "./cordis.patch.yml"
   },
   "files": [
     "dist",
     "examples",
+    "cordis.patch.yml",
     "README.md",
     "LICENSE"
   ],
@@ -47,16 +50,23 @@
     "prepublishOnly": "npm run build"
   },
   "peerDependencies": {
-    "@deepseek-ai/cordis": "^4.0.1",
-    "@deepseek-ai/dsh-settings": "^0.0.1-rc.1",
-    "@deepseek-ai/schemastery": "^3.18.1"
+    "@deepseek-ai/cordis": ">=4.0.1 <5",
+    "@deepseek-ai/dsh-llm-pi-ai": ">=0.1.0-rc.8 <0.2.0",
+    "@deepseek-ai/dsh-settings": ">=0.1.0-rc.8 <0.2.0",
+    "@deepseek-ai/schemastery": ">=3.18.1 <4"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",
-    "@deepseek-ai/dsh-settings": "^0.0.1-rc.1",
+    "@deepseek-ai/dsh-llm-pi-ai": "0.1.0-rc.8",
+    "@deepseek-ai/dsh-settings": "0.1.0-rc.8",
     "@deepseek-ai/schemastery": "^3.18.1",
     "@types/node": "^20.0.0",
     "typescript": "^5.4.0",
     "vitest": "^1.6.0"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
   }
 }
