@@ -18,3 +18,27 @@ jobs:
       - run: npm run build
       - run: npx tsc --noEmit -p tsconfig.test.json
       - run: npm test
+
+  smoke:
+    name: harness smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with: { persist-credentials: false }
+      - uses: actions/setup-node@v4
+        with: { node-version: "20", cache: npm }
+      - run: npm ci
+      - run: npm run build
+      # The harness itself, which this package only peer-depends on. `--no-save`
+      # keeps it out of package.json: it is a fixture for this job, not a
+      # dependency of the plugin.
+      - name: install the harness
+        run: >-
+          npm i --no-save
+          @deepseek-ai/dsh@next
+          @deepseek-ai/dsh-base@next
+          @deepseek-ai/dsh-headless@next
+      # Boots a real cordis kernel with this plugin mounted, against a stub
+      # gateway. The unit suite never loads the plugin the way cordis does, so
+      # this is the only job that can catch a plugin that fails to activate.
+      - run: npm run smoke

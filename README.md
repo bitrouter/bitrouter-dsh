@@ -370,6 +370,28 @@ deleting someone else's edit is testable without a kernel;
 [`test/unload.test.ts`](test/unload.test.ts) drives `apply()` through a fake
 context to check the wiring around it.
 
+Everything above runs without a harness, which is also its limit: none of it
+loads the plugin the way cordis does. A malformed `inject` declaration once
+left the plugin PENDING — it never reached `apply()`, and took the whole boot
+down with it — while the entire unit suite passed. So
+[`test/smoke/`](test/smoke) boots a real harness with this plugin mounted,
+against a stub gateway standing in for BitRouter, and checks the things only a
+boot can show: that the plugin activates, that the bundle patch reaches
+`agent-default-model`, that a route is written, and that a request naming
+`bitrouter/auto` reaches the gateway.
+
+```bash
+npm i --no-save @deepseek-ai/dsh@next @deepseek-ai/dsh-base@next @deepseek-ai/dsh-headless@next
+```
+
+```bash
+npm run smoke
+```
+
+It is hermetic — no credentials, no network, a throwaway `DSH_HOME` — and runs
+as its own CI job, since it installs the harness the plugin only peer-depends
+on. `SMOKE_KEEP=1` leaves the temporary home behind to inspect.
+
 ## License
 
 Apache-2.0
