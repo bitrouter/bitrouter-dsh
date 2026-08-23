@@ -394,7 +394,10 @@ DSH_BIN=/tmp/dsh-harness/node_modules/.bin/dsh npm run smoke
 ```
 
 A `dsh` already in this package's `node_modules/.bin` is used when `DSH_BIN`
-is unset. The test is hermetic either way — no credentials, no network, a
+is unset. It needs **Node 22**: the harness declares no `engines` but imports
+`createZstdDecompress` from `node:zlib` and calls `Promise.withResolvers`, so
+an older runtime dies inside the cordis loader. The plugin itself is fine on
+Node 20, which is what the main CI job covers. The test is hermetic either way — no credentials, no network, a
 throwaway `DSH_HOME` — and runs as its own CI job. `SMOKE_KEEP=1` leaves the
 temporary home behind to inspect.
 

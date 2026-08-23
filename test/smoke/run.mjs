@@ -124,6 +124,18 @@ function check(name, ok, detail) {
 }
 
 async function main() {
+  // The harness declares no `engines`, but needs Node 22: it imports
+  // `createZstdDecompress` from `node:zlib` and calls `Promise.withResolvers`.
+  // On an older runtime the boot dies inside the cordis loader with an
+  // AggregateError that names neither, so say so here instead.
+  const major = Number(process.versions.node.split(".")[0]);
+  if (major < 22) {
+    console.error(
+      `smoke: needs Node >= 22 to boot the harness (running ${process.versions.node}).`,
+    );
+    process.exit(1);
+  }
+
   const gateway = await startGateway();
   const home = await makeHome(gateway.baseUrl);
   console.log(`smoke: DSH_HOME=${home.home}`);
@@ -153,8 +165,10 @@ async function main() {
       !/did not activate|pending \(waiting for services/.test(output),
       output.split("\n").filter((l) => /activate|pending/.test(l)).join("\n") || "(no detail)",
     );
-    check("the harness boots", !/plugin tree failed to load/.test(output),
-      output.slice(0, 600));
+    // The whole stderr, not a slice of it: a boot failure is an AggregateError
+    // whose real causes nest several levels down, and truncating it leaves a
+    // message that names nothing actionable.
+    check("the harness boots", !/plugin tree failed to load/.test(output), output);
 
     // 3. The route it wrote, read back off the settings document.
     const settingsPath = join(home.home, "settings.yaml");

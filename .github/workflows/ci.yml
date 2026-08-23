@@ -26,8 +26,14 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with: { persist-credentials: false }
+      # Node 22, unlike the job above: the harness needs it even though it
+      # declares no `engines`. On 20 the boot dies in the loader, because
+      # dsh-session-persistence-jsonl imports `createZstdDecompress` from
+      # `node:zlib` and dsh-agent-loop calls `Promise.withResolvers`, neither of
+      # which exists there. This plugin itself is fine on 20, which is what the
+      # build job covers.
       - uses: actions/setup-node@v4
-        with: { node-version: "20", cache: npm }
+        with: { node-version: "22", cache: npm }
       - run: npm ci
       - run: npm run build
       # The harness goes in a directory of its own, deliberately. Installed
