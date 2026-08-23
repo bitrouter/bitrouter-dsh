@@ -15,7 +15,7 @@
 #     - id: agent-default-model
 #       config:
 #         provider: bitrouter
-#         model: auto
+#         model: bitrouter/auto
 
 llm-pi-ai:
   providers:
@@ -38,7 +38,7 @@ llm-pi-ai:
         # conservative floor — `auto` may land on any model in the ladder, and
         # over-claiming fails a request mid-turn where under-claiming only
         # compacts early.
-        - id: auto
+        - id: bitrouter/auto
           name: BitRouter Auto
           contextWindow: 128000
           maxTokens: 16384

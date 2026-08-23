@@ -59,7 +59,7 @@ describe("BitRouter Cloud wire shape", () => {
 
   it("leads with the auto route", async () => {
     const p = await profileFor("cloud-models");
-    expect(p.models![0].id).toBe("auto");
+    expect(p.models![0].id).toBe("bitrouter/auto");
     expect(p.models).toHaveLength(4); // three served + auto
   });
 });
@@ -70,7 +70,7 @@ describe("local daemon wire shape", () => {
     // `{ id, object, providers }` is the whole of what `bitrouter start`
     // serves, so every capability field is deliberately left off the profile
     // and llm-pi-ai answers with defaultContextWindow / defaultMaxTokens.
-    const served = p.models!.filter((m) => m.id !== "auto");
+    const served = p.models!.filter((m) => m.id !== "bitrouter/auto");
     expect(served).toEqual([
       { id: "anthropic/claude-fable-5" },
       { id: "anthropic/claude-haiku-4.5" },
@@ -79,6 +79,6 @@ describe("local daemon wire shape", () => {
 
   it("still leads with the auto route", async () => {
     const p = await profileFor("local-models");
-    expect(p.models![0].id).toBe("auto");
+    expect(p.models![0].id).toBe("bitrouter/auto");
   });
 });

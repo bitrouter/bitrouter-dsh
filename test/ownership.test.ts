@@ -13,7 +13,7 @@ const WRITTEN = {
   api: "openai-completions",
   baseURL: "https://api.bitrouter.ai/v1",
   compat: { supportsStore: false },
-  models: [{ id: "auto" }],
+  models: [{ id: "bitrouter/auto" }],
 };
 
 function view(route: unknown, revision = 7): StoredRouteView {

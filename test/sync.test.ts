@@ -66,7 +66,7 @@ describe("syncProfile", () => {
     // The auto route leads the written catalog, and the discovered models
     // follow it — `auto` is the default, not the only option.
     expect(patch.providers.bitrouter.models.map((m) => m.id)).toEqual([
-      "auto",
+      "bitrouter/auto",
       "kimi-k2.5",
       "claude-opus-4-8",
     ]);
@@ -109,7 +109,7 @@ describe("syncProfile", () => {
 
     expect(result.autoOnly).toBe(true);
     expect(result.profile.models).toHaveLength(1);
-    expect(result.profile.models?.[0].id).toBe("auto");
+    expect(result.profile.models?.[0].id).toBe("bitrouter/auto");
     expect(d.updateSettings).toHaveBeenCalledTimes(1);
     expect(d.log.warn).toHaveBeenCalled();
   });
@@ -122,7 +122,7 @@ describe("syncProfile", () => {
     expect(result.autoOnly).toBe(true);
     // Routing is the gateway's job: an empty catalog still leaves a
     // serviceable `bitrouter/auto` rather than an unserviceable empty route.
-    expect(result.profile.models?.[0].id).toBe("auto");
+    expect(result.profile.models?.[0].id).toBe("bitrouter/auto");
   });
 
   it("selects cloud when no local daemon answers the auto probe", async () => {

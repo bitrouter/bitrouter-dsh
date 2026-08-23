@@ -48,7 +48,7 @@ list and its [`cordis.patch.yml`](cordis.patch.yml) inserts the plugin row. No
 `settings` document provider, and `credentials` all ship in
 `@deepseek-ai/dsh-base`.
 
-The bundle patch also points `agent-default-model` at `bitrouter` / `auto`, so
+The bundle patch also points `agent-default-model` at `bitrouter` / `bitrouter/auto`, so
 there is no second step to make BitRouter the default.
 
 Then give it a key and boot:
@@ -76,8 +76,10 @@ case it stays; see
 ## The auto route
 
 `bitrouter/auto` hands model choice back to BitRouter: the request carries
-`auto` as its model and the gateway's routing policy picks the model per
-request. It leads every catalog this plugin writes, and it is what the
+`bitrouter/auto` as its model and the gateway's routing policy picks the model
+per request. `bitrouter/` is a namespace BitRouter reserves for itself, so the
+vendor segment names the router being addressed rather than the token
+destination. It leads every catalog this plugin writes, and it is what the
 `agent-default-model` row selects.
 
 The rest of the catalog is written behind it. `auto` is the default, not the
@@ -89,14 +91,17 @@ a hand-declared route with no models, so a failed discovery used to be written
 as a one-model placeholder; now it is written as the auto route alone, which is
 serviceable rather than a guess, because routing is the gateway's job.
 
-Until BitRouter's own catalog lists `auto`, the plugin synthesizes the entry
+Until BitRouter's own catalog lists `bitrouter/auto`, the plugin synthesizes the entry
 with deliberately conservative capacities (128K context, 16K output). They are
 the floor rather than the ceiling on purpose — `auto` may land on any model in
 the ladder, and the two wrong answers do not cost the same: under-claiming
 compacts a session earlier than it needed to, while over-claiming sends a
 request the chosen model rejects outright, mid-turn, after the message is
-durable. The moment `/v1/models` serves an `auto` entry of its own, that entry
-wins and carries the real numbers with no release here.
+durable. A gateway that ever serves an entry under
+this id supersedes the placeholder, though none does today: the namespace is
+resolved before any provider lookup and BitRouter's registry validator
+refuses catalog models under `bitrouter/`, so the entry has to come from
+here.
 
 ## Becoming the default
 
@@ -273,7 +278,7 @@ load fills in the rest of the catalog.
 
 ## Troubleshooting
 
-**The route only lists `auto`**
+**The route only lists `bitrouter/auto`**
 
 Discovery did not reach BitRouter, or the gateway listed nothing. Check the
 warning in the harness log, then `bitrouter status` for a local target, or that

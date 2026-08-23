@@ -23,7 +23,7 @@
 - id: agent-default-model
   config:
     provider: bitrouter
-    model: auto
+    model: bitrouter/auto
 
 - insert:
     - id: bitrouter

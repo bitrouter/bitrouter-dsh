@@ -70,9 +70,11 @@ export function autoModel(): DiscoveredModel {
  * all: `llm-pi-ai` refuses a hand-declared route with an empty `models` list,
  * so writing nothing would leave the deployment with no BitRouter route.
  *
- * The served entry always wins: BitRouter owns the route, and once its catalog
- * describes `auto` the real context window and capabilities replace the
- * placeholder above with no release here. Order matters because the head of
+ * A served entry still wins if one ever appears, though none does today:
+ * `bitrouter/` is resolved before any provider lookup, and BitRouter's registry
+ * validator refuses catalog models under it, so the entry has to come from
+ * here. The check costs nothing and keeps the placeholder from shadowing a
+ * future one. Order matters because the head of
  * this list is what a model selector offers first.
  */
 export function withAutoModel(discovered: DiscoveredModel[]): DiscoveredModel[] {
