@@ -17,6 +17,11 @@ export interface Config {
   removeOnUnload: boolean;
   /** Milliseconds to wait for the local daemon probe when `target: auto`. */
   probeTimeoutMs: number;
+  /**
+   * Fill `apiKeyEnv` from a `bitrouter auth login` already done on this
+   * machine, when — and only when — that reference resolves to nothing.
+   */
+  adoptCliLogin: boolean;
 }
 
 export const Config: Schema<Config> = Schema.object({
@@ -52,4 +57,9 @@ export const Config: Schema<Config> = Schema.object({
   probeTimeoutMs: Schema.natural()
     .default(1500)
     .description("Local-daemon probe timeout for target: auto."),
+  adoptCliLogin: Schema.boolean()
+    .default(true)
+    .description(
+      "Fill apiKeyEnv from a `bitrouter auth login` on this machine, only when that reference resolves to nothing. Never replaces a credential you already set.",
+    ),
 });

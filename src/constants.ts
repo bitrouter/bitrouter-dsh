@@ -15,15 +15,31 @@ export const bitrouter = {
   local: {
     apiBaseUrl: "http://127.0.0.1:4356/v1",
   },
-  /**
-   * Listed when the catalog cannot be fetched, so the route is still
-   * serviceable — `llm-pi-ai` refuses a hand-declared route with no models.
-   */
-  defaultModel: "kimi-k2.5",
 } as const;
 
 /** The `llm-pi-ai` settings namespace this plugin writes its route into. */
 export const LLM_NAMESPACE = "llm-pi-ai";
+
+/**
+ * The `agent-default-model` settings namespace, owned by
+ * `@deepseek-ai/dsh-agent-default-model`. The composition entry this bundle
+ * patches is that plugin's own row; this namespace is where a user's saved
+ * selection lives, and is read to tell "the user chose BitRouter" from "the
+ * user chose something else" before this plugin offers to take over.
+ */
+export const AGENT_DEFAULT_MODEL_NAMESPACE = "agent-default-model";
+
+/**
+ * The model id that hands model choice back to BitRouter. Paired with the
+ * route key this is the `bitrouter/auto` selection a user makes, and it
+ * travels to the gateway as the request's model.
+ *
+ * BitRouter serves the route; this plugin only advertises it. Until the
+ * catalog lists `auto` itself, `autoModel()` synthesizes the entry so the
+ * route is serviceable — and once the catalog does list it, the served entry
+ * wins and carries the real metadata.
+ */
+export const AUTO_MODEL_ID = "auto";
 
 /** Wire protocol BitRouter speaks. */
 export const PROTOCOL = "openai-completions";

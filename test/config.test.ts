@@ -14,6 +14,7 @@ describe("Config", () => {
       route: "bitrouter",
       displayName: "BitRouter",
       manageProfile: true,
+      adoptCliLogin: true,
       removeOnUnload: true,
       probeTimeoutMs: 1500,
     });
