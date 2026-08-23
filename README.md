@@ -380,17 +380,23 @@ boot can show: that the plugin activates, that the bundle patch reaches
 `agent-default-model`, that a route is written, and that a request naming
 `bitrouter/auto` reaches the gateway.
 
+The harness it boots is not a dependency of this package, so install it
+somewhere of its own and point `DSH_BIN` at it — installing it *into* this
+package makes npm resolve ~200 harness packages against the plugin's own
+lockfile and peer set, which takes many minutes:
+
 ```bash
-npm i --no-save @deepseek-ai/dsh@next @deepseek-ai/dsh-base@next @deepseek-ai/dsh-headless@next
+mkdir -p /tmp/dsh-harness && (cd /tmp/dsh-harness && npm init -y >/dev/null && npm i @deepseek-ai/dsh@next @deepseek-ai/dsh-base@next @deepseek-ai/dsh-headless@next)
 ```
 
 ```bash
-npm run smoke
+DSH_BIN=/tmp/dsh-harness/node_modules/.bin/dsh npm run smoke
 ```
 
-It is hermetic — no credentials, no network, a throwaway `DSH_HOME` — and runs
-as its own CI job, since it installs the harness the plugin only peer-depends
-on. `SMOKE_KEEP=1` leaves the temporary home behind to inspect.
+A `dsh` already in this package's `node_modules/.bin` is used when `DSH_BIN`
+is unset. The test is hermetic either way — no credentials, no network, a
+throwaway `DSH_HOME` — and runs as its own CI job. `SMOKE_KEEP=1` leaves the
+temporary home behind to inspect.
 
 ## License
 

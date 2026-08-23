@@ -22,6 +22,7 @@ jobs:
   smoke:
     name: harness smoke
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v6
         with: { persist-credentials: false }
@@ -29,16 +30,24 @@ jobs:
         with: { node-version: "20", cache: npm }
       - run: npm ci
       - run: npm run build
-      # The harness itself, which this package only peer-depends on. `--no-save`
-      # keeps it out of package.json: it is a fixture for this job, not a
-      # dependency of the plugin.
+      # The harness goes in a directory of its own, deliberately. Installed
+      # into this package it would be resolved against the plugin's own
+      # lockfile and peer set, which takes npm many minutes; standalone it is a
+      # plain install of ~200 packages. The profile's bundles resolve from the
+      # dsh installation first, so dsh-base and dsh-headless are found beside
+      # the binary DSH_BIN names.
       - name: install the harness
-        run: >-
-          npm i --no-save
-          @deepseek-ai/dsh@next
-          @deepseek-ai/dsh-base@next
-          @deepseek-ai/dsh-headless@next
+        run: |
+          mkdir -p "$RUNNER_TEMP/harness"
+          cd "$RUNNER_TEMP/harness"
+          npm init -y >/dev/null
+          npm i --no-audit --no-fund \
+            @deepseek-ai/dsh@next \
+            @deepseek-ai/dsh-base@next \
+            @deepseek-ai/dsh-headless@next
       # Boots a real cordis kernel with this plugin mounted, against a stub
       # gateway. The unit suite never loads the plugin the way cordis does, so
       # this is the only job that can catch a plugin that fails to activate.
       - run: npm run smoke
+        env:
+          DSH_BIN: ${{ runner.temp }}/harness/node_modules/.bin/dsh
