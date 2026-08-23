@@ -92,11 +92,15 @@ export const name = "bitrouter";
  * this plugin PENDING — declare the route in `llm-pi-ai`'s own entry config
  * instead (see the README).
  *
- * `credentials` is optional, so a composition without a credentials provider
- * still loads: the route's key then resolves straight off the process
- * environment, which is what every earlier release did.
+ * `credentials` is deliberately absent. Cordis `inject` is a list of services
+ * to *wait for*, with no optional form — an entry here would leave this plugin
+ * PENDING in a composition that mounts no credential provider, which is the
+ * one case the credential seam is supposed to degrade through. So it is read
+ * at run time through `ctx.get('credentials')`, exactly as `llm-pi-ai` reads
+ * it, and an absent one resolves the route's key straight off the process
+ * environment — what every earlier release did.
  */
-export const inject = { required: ["settings"], optional: ["credentials"] };
+export const inject = ["settings"];
 
 const NS = settingsNamespace(LLM_NAMESPACE);
 
@@ -112,13 +116,14 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
   // resolves to nothing, and the BitRouter CLI is holding a live token, fill
   // the gap. Ordered first so the discovery request below authenticates with
   // the same credential the route will use per request.
-  if (config.adoptCliLogin && config.apiKeyEnv && ctx.credentials) {
+  const credentials = ctx.get("credentials");
+  if (config.adoptCliLogin && config.apiKeyEnv && credentials) {
     const outcome = await adoptCliLogin(config.apiKeyEnv, {
       env: process.env,
       now: () => new Date(),
       credentials: {
-        describe: (ref) => ctx.credentials.describe(credentialRef(ref)),
-        set: (ref, value) => ctx.credentials.set(credentialRef(ref), value),
+        describe: (ref) => credentials.describe(credentialRef(ref)),
+        set: (ref, value) => credentials.set(credentialRef(ref), value),
       },
       log: {
         info: (message) => ctx.logger.info(message),
@@ -138,10 +143,10 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
     fetch,
     // Resolve the way llm-pi-ai will at request time, so a key held in the
     // managed document or a `.env` authenticates discovery too.
-    ...(ctx.credentials
+    ...(credentials
       ? {
           resolveApiKey: async (ref: string) =>
-            (await ctx.credentials.resolve(credentialRef(ref)))?.value,
+            (await credentials.resolve(credentialRef(ref)))?.value,
         }
       : {}),
     log: {
@@ -175,49 +180,63 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
   };
 
   ctx.effect(() => () => {
-    void (async () => {
-      let decision: RemovalDecision;
-      try {
-        decision = decideRemoval(readStoredRoute(), written);
-      } catch (err) {
-        ctx.logger.warn(
-          `bitrouter: could not check ownership of the "${config.route}" route on unload (${String(err)}); leaving it in place`,
-        );
-        return;
-      }
+    // Everything up to the write is synchronous, deliberately. The settings
+    // service drains writes already queued when teardown starts, but a write
+    // enqueued a microtask later — after an `await` — races a process that is
+    // already exiting, and loses. `describe()` is synchronous, so the ownership
+    // decision costs nothing here and the `mutate` is queued before the
+    // disposer returns.
+    let decision: RemovalDecision;
+    try {
+      decision = decideRemoval(readStoredRoute(), written);
+    } catch (err) {
+      ctx.logger.warn(
+        `bitrouter: could not check ownership of the "${config.route}" route on unload (${String(err)}); leaving it in place`,
+      );
+      return;
+    }
 
-      if (!decision.remove) {
-        ctx.logger.info(describeDecision(config.route, decision));
-        return;
-      }
+    if (!decision.remove) {
+      ctx.logger.info(describeDecision(config.route, decision));
+      return;
+    }
 
-      try {
-        // An op naming the one route, rather than rewriting the section: the
-        // rest of the namespace belongs to routes this plugin never saw.
-        //
-        // The revision fences the gap between the ownership read above and this
-        // write. Without it the check would be advisory — a writer landing in
-        // between would have its edit deleted by a decision made before it
-        // existed. A refusal here is the outcome we want anyway, so it is
-        // reported and not retried: the section moved, which is exactly the
-        // case in which this plugin should not be deleting anything.
-        await ctx.settings.mutate(
-          NS,
-          [{ op: "unset", path: ["providers", config.route] }],
-          decision.revision,
-        );
+    // An op naming the one route, rather than rewriting the section: the rest
+    // of the namespace belongs to routes this plugin never saw.
+    //
+    // The revision fences the gap between the ownership read above and this
+    // write. Without it the check would be advisory — a writer landing in
+    // between would have its edit deleted by a decision made before it
+    // existed. A refusal here is the outcome we want anyway, so it is reported
+    // and not retried: the section moved, which is exactly the case in which
+    // this plugin should not be deleting anything.
+    void ctx.settings
+      .mutate(NS, [{ op: "unset", path: ["providers", config.route] }], decision.revision)
+      .then(() => {
         ctx.logger.info(describeDecision(config.route, decision));
-      } catch (err) {
+      })
+      .catch((err: unknown) => {
         if (err instanceof SettingsConflictError) {
           ctx.logger.info(
             `bitrouter: the "${config.route}" route changed while it was being removed; leaving it in place`,
           );
           return;
         }
+        // At process shutdown the settings service is disposed before a
+        // dependent plugin's queued write runs, so this write cannot land and
+        // the route stays in the document until the next load rewrites it.
+        // That is ordinary news rather than a failure — see `removeOnUnload`
+        // in the README. Matching the message is admittedly loose, but it only
+        // decides a log level, and the alternative is warning on every exit.
+        if (err instanceof Error && err.message.includes("disposed")) {
+          ctx.logger.info(
+            `bitrouter: the settings service was already gone when the "${config.route}" route was to be removed; leaving it for the next load`,
+          );
+          return;
+        }
         ctx.logger.warn(
           `bitrouter: could not remove the "${config.route}" route on unload: ${String(err)}`,
         );
-      }
-    })();
+      });
   });
 }

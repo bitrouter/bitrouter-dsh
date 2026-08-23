@@ -68,6 +68,10 @@ function makeCtx(opts: { mutate?: ReturnType<typeof vi.fn>; revision?: number } 
     effect: vi.fn((fn: () => () => void) => {
       disposer = fn();
     }),
+    // Cordis's runtime service accessor. This composition mounts no credential
+    // provider, which is the degrade-through case: the route's key resolves
+    // straight off the process environment.
+    get: vi.fn(() => undefined),
   };
 
   return {

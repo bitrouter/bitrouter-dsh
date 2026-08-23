@@ -184,7 +184,7 @@ key you want):
 | `route` | `bitrouter` | The `llm-pi-ai` route key this plugin owns. |
 | `displayName` | `BitRouter` | Label shown by model selectors. |
 | `manageProfile` | `true` | Set to `false` to stop writing the route and hand-maintain it. |
-| `removeOnUnload` | `true` | Remove the route from settings when the plugin unloads — but only while it is still the route this plugin wrote. |
+| `removeOnUnload` | `true` | Remove the route from settings when the plugin unloads — while it is still the route this plugin wrote, and while the settings service is still up (see below). |
 | `probeTimeoutMs` | `1500` | Local-daemon probe timeout for `target: auto`. |
 | `adoptCliLogin` | `true` | Fill `apiKeyEnv` from a `bitrouter auth login` on this machine, only when that reference resolves to nothing. |
 
@@ -220,6 +220,19 @@ already gone are all left alone, and the log says which.
 
 The asymmetry is deliberate. A leftover route is a line in a settings file that
 the next load overwrites anyway; a deleted one is your configuration gone.
+
+#### It does not fire at process exit
+
+Removal happens when the *plugin* unloads while the harness keeps running —
+`dsh plugin remove`, or a hot reload. It does **not** happen when the process
+exits: the settings service is disposed before a dependent plugin's queued
+write runs, and the write is refused with `settings service was disposed
+before the queued "llm-pi-ai" mutate ran`.
+
+So an ordinary `dsh` run leaves the route in your settings document. That is
+harmless — the next load rewrites it — and it is logged as news rather than a
+warning. If you want the document clean, remove the bundle; that is the
+unload this switch is really for.
 
 The delete carries the `revision` the ownership check was read at, so a writer
 landing between the check and the write is refused rather than overwritten —
