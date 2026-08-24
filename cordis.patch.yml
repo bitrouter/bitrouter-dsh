@@ -1,9 +1,30 @@
 # Bundle layer for @bitrouter/dsh, applied when a profile lists this bundle.
 #
-# Only this plugin is inserted. Everything it depends on is already in
+# Two rows, one inserted and one re-addressed.
+#
+# The insert is this plugin. Everything it depends on is already in
 # `@deepseek-ai/dsh-base`: the `llm-pi-ai` adapter (mounted dormant, waiting for
 # a settings section to supply routes), the `settings` document provider, and
 # `credentials` for resolving apiKeyEnv references.
+#
+# The `agent-default-model` row is dsh-base's own, re-addressed by id — bundle
+# patches compose in `dsh.profile.bundles` order and the last write wins per
+# row, so listing this bundle after the base one makes BitRouter the default
+# provider at install time rather than at first boot. That is the whole of
+# "installing the plugin points the harness at BitRouter": no runtime write, no
+# settings mutation, and nothing to undo beyond removing the bundle.
+#
+# A patch replaces the row's whole `config`, so both keys are restated here.
+# Two layers still sit above this one and are left alone: the profile's own
+# `cordis.patch.yml` overrides the row for a deployment that wants a different
+# default, and a selection the user saved through `agentDefaultModel` lives in
+# the settings user layer, which wins over every composition entry including
+# this one. Neither is disturbed by installing or removing this bundle.
+- id: agent-default-model
+  config:
+    provider: bitrouter
+    model: bitrouter/auto
+
 - insert:
     - id: bitrouter
       name: '@bitrouter/dsh'

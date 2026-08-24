@@ -7,6 +7,15 @@
 # this section alone is enough to make the route live.
 #
 # Swap baseURL to http://127.0.0.1:4356/v1 for a local BitRouter daemon.
+#
+# Setting BitRouter as the *default* is the second half, and lives in the
+# profile's own `cordis.patch.yml` rather than here — the plugin's bundle patch
+# does exactly this when it is installed:
+#
+#     - id: agent-default-model
+#       config:
+#         provider: bitrouter
+#         model: bitrouter/auto
 
 llm-pi-ai:
   providers:
@@ -24,7 +33,21 @@ llm-pi-ai:
         supportsDeveloperRole: false
         maxTokensField: max_tokens
       models:
-        - id: kimi-k2.5
-          name: Kimi K2.5
-          contextWindow: 262144
-          maxTokens: 32768
+        # The auto route: BitRouter picks the model per request. Listed first
+        # so a model selector offers it first. The capacities are the
+        # conservative floor — `auto` may land on any model in the ladder, and
+        # over-claiming fails a request mid-turn where under-claiming only
+        # compacts early.
+        - id: bitrouter/auto
+          name: BitRouter Auto
+          contextWindow: 128000
+          maxTokens: 16384
+          input: [text, image]
+        # `auto` is the default, not the only option. Add whichever specific
+        # models you want to be able to pin; ids are what `GET /v1/models`
+        # lists.
+        - id: anthropic/claude-opus-4.6
+          name: 'Anthropic: Claude Opus 4.6'
+          contextWindow: 200000
+          maxTokens: 16384
+          input: [text, image]
