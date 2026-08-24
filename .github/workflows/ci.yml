@@ -18,7 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with: { persist-credentials: false }
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with: { node-version: "20", cache: npm }
       - run: npm ci
       - run: npm run build
@@ -54,7 +54,7 @@ jobs:
       # `node:zlib` and dsh-agent-loop calls `Promise.withResolvers`, neither of
       # which exists there. This plugin itself is fine on 20, which is what the
       # build job covers.
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with: { node-version: "22", cache: npm }
       - run: npm ci
       - run: npm run build
