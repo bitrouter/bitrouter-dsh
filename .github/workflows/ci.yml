@@ -41,12 +41,38 @@ jobs:
     # bump of a `@deepseek-ai/*` peer (see .github/dependabot.yml), and a
     # harness bump is precisely the change this job exists to catch. Gating on
     # `harness-smoke` alone would skip it on the one pull request that needs it.
-    if: >-
-      github.event_name != 'pull_request' ||
-      contains(github.event.pull_request.labels.*.name, 'harness-smoke') ||
-      contains(github.event.pull_request.labels.*.name, 'harness-update')
+    #
+    # The decision is a step rather than a job-level `if:`, which matters more
+    # than it looks. A job skipped by `if:` reports nothing at all, and a
+    # required status check that never reports leaves a pull request pending
+    # forever — so as a job-level condition this would have blocked every
+    # merge instead of gating them. Deciding inside the job means it always
+    # reports, and can be required.
     steps:
+      - name: decide whether this run needs the harness
+        id: gate
+        env:
+          EVENT: ${{ github.event_name }}
+          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT" != "pull_request" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "$EVENT is not a pull request — booting the harness"
+            exit 0
+          fi
+          case ",${LABELS}," in
+            *,harness-smoke,*|*,harness-update,*)
+              echo "run=true" >> "$GITHUB_OUTPUT"
+              echo "labelled (${LABELS}) — booting the harness" ;;
+            *)
+              echo "run=false" >> "$GITHUB_OUTPUT"
+              echo "no harness-smoke or harness-update label — nothing to boot."
+              echo "Add one to this pull request to run the harness against it." ;;
+          esac
+
       - uses: actions/checkout@v6
+        if: steps.gate.outputs.run == 'true'
         with: { persist-credentials: false }
       # Node 22, unlike the job above: the harness needs it even though it
       # declares no `engines`. On 20 the boot dies in the loader, because
@@ -55,9 +81,12 @@ jobs:
       # which exists there. This plugin itself is fine on 20, which is what the
       # build job covers.
       - uses: actions/setup-node@v4
+        if: steps.gate.outputs.run == 'true'
         with: { node-version: "22", cache: npm }
       - run: npm ci
+        if: steps.gate.outputs.run == 'true'
       - run: npm run build
+        if: steps.gate.outputs.run == 'true'
 
       # Exact versions rather than `@next`, so the install is reproducible and
       # the cache key means something. The nightly run is what notices when the
@@ -71,6 +100,7 @@ jobs:
       # something other than what `npm ci` resolved, which is the drift this
       # step is meant to remove.
       - name: resolve the harness version
+        if: steps.gate.outputs.run == 'true'
         id: harness
         run: |
           set -euo pipefail
@@ -83,6 +113,7 @@ jobs:
           echo "version=$V" >> "$GITHUB_OUTPUT"
 
       - uses: actions/cache@v4
+        if: steps.gate.outputs.run == 'true'
         id: harness-cache
         with:
           path: ${{ runner.temp }}/harness
@@ -93,8 +124,12 @@ jobs:
       # peer set, which takes npm many minutes; standalone it is a plain
       # install. The profile's bundles resolve from the dsh installation first,
       # so dsh-base and dsh-headless are found beside the binary DSH_BIN names.
+      # Both halves of this condition are load-bearing. A skipped step has no
+      # outputs, so with the gate closed `cache-hit` is the empty string and
+      # `!= 'true'` is satisfied — this step would install the harness on
+      # every pull request that asked for nothing.
       - name: install the harness
-        if: steps.harness-cache.outputs.cache-hit != 'true'
+        if: steps.gate.outputs.run == 'true' && steps.harness-cache.outputs.cache-hit != 'true'
         env:
           V: ${{ steps.harness.outputs.version }}
         run: |
@@ -111,5 +146,6 @@ jobs:
       # pull request in milliseconds; this covers the harness contracts that
       # only a real boot can reach.
       - run: npm run smoke
+        if: steps.gate.outputs.run == 'true'
         env:
           DSH_BIN: ${{ runner.temp }}/harness/node_modules/.bin/dsh
