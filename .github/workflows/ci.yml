@@ -16,7 +16,7 @@ jobs:
     name: build + test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with: { persist-credentials: false }
       - uses: actions/setup-node@v7
         with: { node-version: "20", cache: npm }
@@ -46,7 +46,7 @@ jobs:
       contains(github.event.pull_request.labels.*.name, 'harness-smoke') ||
       contains(github.event.pull_request.labels.*.name, 'harness-update')
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with: { persist-credentials: false }
       # Node 22, unlike the job above: the harness needs it even though it
       # declares no `engines`. On 20 the boot dies in the loader, because
