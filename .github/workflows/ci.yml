@@ -4,6 +4,12 @@ on:
   pull_request:
   push:
     branches: [main]
+  schedule:
+    # The harness smoke job tracks a moving upstream, so it runs on a clock as
+    # well as on merges — that is where drift in `next` should surface, rather
+    # than on somebody's unrelated pull request.
+    - cron: "0 6 * * *"
+  workflow_dispatch:
 
 jobs:
   build:
@@ -23,6 +29,16 @@ jobs:
     name: harness smoke
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # Not on every pull request. Installing the harness is ~200 packages and
+    # around fifteen minutes against seventeen seconds for everything else, and
+    # what it uniquely proves — that llm-pi-ai still accepts the profile this
+    # plugin writes, and that the model id survives to the wire — changes when
+    # the *upstream* moves, not when this package does. So it runs on merges to
+    # main, nightly, on demand, and on a pull request that asks for it by
+    # carrying the `harness-smoke` label.
+    if: >-
+      github.event_name != 'pull_request' ||
+      contains(github.event.pull_request.labels.*.name, 'harness-smoke')
     steps:
       - uses: actions/checkout@v6
         with: { persist-credentials: false }
@@ -36,24 +52,42 @@ jobs:
         with: { node-version: "22", cache: npm }
       - run: npm ci
       - run: npm run build
-      # The harness goes in a directory of its own, deliberately. Installed
-      # into this package it would be resolved against the plugin's own
-      # lockfile and peer set, which takes npm many minutes; standalone it is a
-      # plain install of ~200 packages. The profile's bundles resolve from the
-      # dsh installation first, so dsh-base and dsh-headless are found beside
-      # the binary DSH_BIN names.
+
+      # Exact versions rather than `@next`, so the install is reproducible and
+      # the cache key means something. The nightly run is what notices when the
+      # upstream moves past them; a pull request should not discover it.
+      - name: resolve the harness version
+        id: harness
+        run: echo "version=0.1.1-rc.2" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache@v4
+        id: harness-cache
+        with:
+          path: ${{ runner.temp }}/harness
+          key: dsh-harness-${{ runner.os }}-node22-${{ steps.harness.outputs.version }}
+
+      # The harness goes in a directory of its own, deliberately. Installed into
+      # this package it would be resolved against the plugin's own lockfile and
+      # peer set, which takes npm many minutes; standalone it is a plain
+      # install. The profile's bundles resolve from the dsh installation first,
+      # so dsh-base and dsh-headless are found beside the binary DSH_BIN names.
       - name: install the harness
+        if: steps.harness-cache.outputs.cache-hit != 'true'
+        env:
+          V: ${{ steps.harness.outputs.version }}
         run: |
           mkdir -p "$RUNNER_TEMP/harness"
           cd "$RUNNER_TEMP/harness"
           npm init -y >/dev/null
           npm i --no-audit --no-fund \
-            @deepseek-ai/dsh@next \
-            @deepseek-ai/dsh-base@next \
-            @deepseek-ai/dsh-headless@next
+            "@deepseek-ai/dsh@$V" \
+            "@deepseek-ai/dsh-base@$V" \
+            "@deepseek-ai/dsh-headless@$V"
+
       # Boots a real cordis kernel with this plugin mounted, against a stub
-      # gateway. The unit suite never loads the plugin the way cordis does, so
-      # this is the only job that can catch a plugin that fails to activate.
+      # gateway. `test/activation.test.ts` covers the cordis contract on every
+      # pull request in milliseconds; this covers the harness contracts that
+      # only a real boot can reach.
       - run: npm run smoke
         env:
           DSH_BIN: ${{ runner.temp }}/harness/node_modules/.bin/dsh

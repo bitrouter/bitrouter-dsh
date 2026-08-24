@@ -373,8 +373,20 @@ context to check the wiring around it.
 Everything above runs without a harness, which is also its limit: none of it
 loads the plugin the way cordis does. A malformed `inject` declaration once
 left the plugin PENDING — it never reached `apply()`, and took the whole boot
-down with it — while the entire unit suite passed. So
-[`test/smoke/`](test/smoke) boots a real harness with this plugin mounted,
+down with it — while the entire unit suite passed.
+
+Two tests answer that at two different prices.
+[`test/activation.test.ts`](test/activation.test.ts) mounts the plugin in a
+real cordis context with a stub `settings` service and checks that it actually
+activates. `inject` is a cordis contract rather than a harness one, so catching
+that specific class needs no dsh, no install, and no network — it runs in
+milliseconds on every pull request, and reintroducing the original bug fails
+all four of its cases. [`test/patch.test.ts`](test/patch.test.ts) is the same
+bargain for `cordis.patch.yml`: the row that makes BitRouter the default is
+data nothing in `src/` reads, so it is checked against the file.
+
+[`test/smoke/`](test/smoke) is the expensive one. It boots a real harness with
+this plugin mounted,
 against a stub gateway standing in for BitRouter, and checks the things only a
 boot can show: that the plugin activates, that the bundle patch reaches
 `agent-default-model`, that a route is written, and that a request naming
@@ -392,6 +404,14 @@ mkdir -p /tmp/dsh-harness && (cd /tmp/dsh-harness && npm init -y >/dev/null && n
 ```bash
 DSH_BIN=/tmp/dsh-harness/node_modules/.bin/dsh npm run smoke
 ```
+
+It does not run on every pull request. Installing the harness is ~200 packages
+and around fifteen minutes, against seventeen seconds for everything else, and
+what it uniquely proves — that `llm-pi-ai` still accepts the profile this
+plugin writes, and that the model id survives to the wire — changes when the
+*upstream* moves, not when this package does. So it runs on merges to `main`,
+nightly, on demand, and on a pull request that asks for it by carrying the
+`harness-smoke` label.
 
 A `dsh` already in this package's `node_modules/.bin` is used when `DSH_BIN`
 is unset. It needs **Node 22**: the harness declares no `engines` but imports
